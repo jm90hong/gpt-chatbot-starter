@@ -6,7 +6,7 @@ import pickle
 import os
 
 # OpenAI 클라이언트 생성
-client = openai.OpenAI(api_key="openai_api_key")
+#client = openai.OpenAI(api_key="openai_api_key")
 
 # 모델과 인덱스 로드
 try:
