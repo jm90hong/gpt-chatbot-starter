@@ -3,22 +3,30 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 import pickle
+import os
 
 # OpenAI 클라이언트 생성
-client = openai.OpenAI(api_key="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")
+client = openai.OpenAI(api_key="openai_api_key")
 
-# 로드
-model = SentenceTransformer('all-MiniLM-L6-v2')
-index = faiss.read_index("faiss_index.bin")
-with open("chunks.pkl", "rb") as f:
-    chunks = pickle.load(f)
+# 모델과 인덱스 로드
+try:
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+    index = faiss.read_index("faiss_index.bin")
+    with open("chunks.pkl", "rb") as f:
+        chunks = pickle.load(f)
+except Exception as e:
+    print(f"❌ 모델 로드 실패: {e}")
+    print("💡 먼저 'python embbeding.py'를 실행하세요.")
+    exit(1)
 
 def search_context(question, top_k=3):
+    """질문과 관련된 문서 컨텍스트를 검색합니다."""
     q_embedding = model.encode([question])
     distances, indices = index.search(np.array(q_embedding), top_k)
     return [chunks[i] for i in indices[0]]
 
 def ask_gpt(context, question):
+    """GPT-4를 사용하여 질문에 답변합니다."""
     prompt = f"""
 다음 문서를 참고하여 질문에 답해주세요:
 
@@ -27,6 +35,8 @@ def ask_gpt(context, question):
 
 질문:
 {question}
+
+답변은 한국어로 작성해주세요.
 """
     response = client.chat.completions.create(
         model="gpt-4",
@@ -34,13 +44,26 @@ def ask_gpt(context, question):
     )
     return response.choices[0].message.content.strip()
 
-# 콘솔 입력 루프
+# 메인 루프
 if __name__ == "__main__":
-    print("📄 사내 문서 기반 GPT 챗봇 (종료하려면 'exit' 입력)\n")
+    print("📄 사내 문서 기반 GPT 챗봇")
+    print("💡 종료하려면 'exit'를 입력하세요.\n")
+    
     while True:
-        question = input("질문 > ")
-        if question.strip().lower() in ["exit", "quit"]:
+        try:
+            question = input("질문 > ").strip()
+            if question.lower() in ["exit", "quit"]:
+                print("👋 안녕히 가세요!")
+                break
+            if not question:
+                continue
+                
+            context = "\n".join(search_context(question))
+            answer = ask_gpt(context, question)
+            print(f"\n💬 답변: {answer}\n")
+            
+        except KeyboardInterrupt:
+            print("\n👋 안녕히 가세요!")
             break
-        context = "\n".join(search_context(question))
-        answer = ask_gpt(context, question)
-        print(f"\n�� 답변: {answer}\n")
+        except Exception as e:
+            print(f"❌ 오류 발생: {e}")
