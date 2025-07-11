@@ -13,7 +13,7 @@
 ## 📋 요구사항
 
 ```bash
-pip install openai sentence-transformers faiss-cpu PyMuPDF numpy
+pip install openai sentence-transformers faiss-cpu PyMuPDF numpy tf-keras
 ```
 
 ## 🛠️ 설치 및 설정
